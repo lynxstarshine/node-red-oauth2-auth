@@ -1,0 +1,90 @@
+<script type="text/javascript">
+  RED.nodes.registerType('oauth2-auth',{
+      category: 'network',
+      paletteLabel: 'OAuth2 Authorization',
+      color: '#d7d7a0',
+      defaults: {
+          grant_type: {value: "authorization_code"},
+          client_id: {value: "", required: true},
+          client_secret: {value: "", required: true},
+          scope: {value: ""},
+          state: {value: ""},
+          authentication_url: {value: "", required: true},
+          redirect_url: {value: ""},
+          access_token_url: {value: "", required: true},
+          name: {value: ""}
+      },
+      inputs:1,
+      outputs:1,
+      icon: "white-globe.svg",
+      label: function() { return this.name||"oauth2-auth"; },
+      labelStyle: function () { return this.name ? "node_label_italic" : ""; },
+      oneditprepare: function()
+      {
+        $("#node-input-redirect_url").val(document.location.origin + '/oauth/callback');
+        $("#node-input-state").val(Math.random().toString().slice(2));
+      }
+  });
+</script>
+
+<script type="text/html" data-template-name="oauth2-auth">
+  <!-- Grant Type -->
+  <div class="form-row">
+    <label for="node-input-grant_type"><i class="fa fa-wrench"></i>Grant Type</label>
+    <select type="text" id="node-input-grant_type" placeholder="Grant Type">
+      <option value="authorization_code">Authorization Code</option>
+    </select>
+  </div>
+
+  <!-- Client Id -->
+  <div class="form-row">
+    <label for="node-input-client_id"><i class="fa fa-user fa-fw"></i>Client Id</label>
+    <input type="text" id="node-input-client_id" placeholder="Client Id">
+  </div>
+
+  <!-- Client Secret -->
+  <div class="form-row">
+    <label for="node-input-client_secret"><i class="fa fa-lock fa-fw"></i>Client Secret</label>
+    <input type="password" id="node-input-client_secret" placeholder="Client Secret">
+  </div>
+
+  <!-- Scope -->
+  <div class="form-row">
+    <label for="node-input-scope"><i class="fa fa-code fa-fw"></i>Scope</label>
+    <input type="text" id="node-input-scope" placeholder="Scope">
+  </div>
+
+  <!-- State -->
+  <div class="form-row">
+    <label for="node-input-state"><i class="fa fa-code fa-fw"></i>State</label>
+    <input disabled type="text" id="node-input-state" placeholder="State">
+  </div>
+
+  <!-- Authentication Url -->
+  <div class="form-row">
+    <label for="node-input-authentication_url"><i class="fa fa-link fa-fw"></i>Authentication Url</label>
+    <input type="text" id="node-input-authentication_url" placeholder="Authentication Url">
+  </div>
+      
+  <!-- Redirect Url -->
+  <div class="form-row">
+    <label for="node-input-redirect_url"><i class="fa fa-link fa-fw"></i>Redirect Url</label>
+    <input readonly type="text" id="node-input-redirect_url" placeholder="Redirect Url">
+  </div>
+
+  <!-- Access Token Url -->
+  <div class="form-row">
+    <label for="node-input-access_token_url"><i class="fa fa-link fa-fw"></i>Access Token Url</label>
+    <input type="text" id="node-input-access_token_url" placeholder="Access Token Url">
+  </div>
+  
+  <!-- Name -->
+  <div class="form-row">
+    <label for="node-input-name"><i class="fa fa-tag"></i>Name</label>
+    <input type="text" id="node-input-name" placeholder="Name">
+  </div>
+</script>
+
+<script type="text/html" data-help-name="oauth2-auth">
+  <p>OAuth2 client for getting oauth2 credentials by the authorization flow to use in other nodes. Credentials are automatically refreshed on expiration.</p>
+</script>
