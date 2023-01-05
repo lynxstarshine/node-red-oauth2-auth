@@ -22,7 +22,7 @@ module.exports = function (RED) {
       //   });
       // }
 
-      msg.bearerToken = 'Bearer: ' + node.credentials.access_token;
+      msg.bearerToken = 'Bearer ' + node.credentials.access_token;
       node.send(msg);
     });
   }
