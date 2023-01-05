@@ -31,12 +31,12 @@
           var redirect_url = $("#node-input-redirect_url").val();
           var access_token_url = $("#node-input-access_token_url").val();
 
-          $("#node-button-authorize").toggleClass("disabled", (client_id.length === 0 || client_secret.length === 0 || authentication_url === 0 || redirect_url === 0 || access_token_url === 0));
+          $("#node-button-authorize").toggleClass("ui-state-disabled", (client_id.length === 0 || client_secret.length === 0 || authentication_url === 0 || redirect_url === 0 || access_token_url === 0));
         }
 
         updateButtonAuthorize();
 
-        $("#node-input-redirect_url").val(document.location.origin + '/oauth/callback');
+        $("#node-input-redirect_url").val(document.location.origin + '/oauth2-auth/callback');
         $("#node-input-client_id").on('change keydown paste input', updateButtonAuthorize);
         $("#node-input-client_secret").on('change keydown paste input', updateButtonAuthorize);
         $("#node-input-authentication_url").on('change keydown paste input', updateButtonAuthorize);
@@ -46,11 +46,20 @@
         $("#node-button-authorize").mousedown(function() {
           var client_id = $("#node-input-client_id").val();
           var client_secret = $("#node-input-client_secret").val();
+          var authentication_url = $("#node-input-authentication_url").val();
           var redirect_url = $("#node-input-redirect_url").val();
+          var access_token_url = $("#node-input-access_token_url").val();
+          var scope = $("#node-input-scope").val();
           var grant_type = $("#node-input-grant_type").val();
 
           if (grant_type == "authorization_code") {
-            var url = 'oauth2-auth/auth?id='+id+'&client_id='+client_id+"&client_secret="+client_secret+"&callback="+encodeURIComponent(redirect_url);
+            var url = "oauth2-auth/auth?id="+id
+                    +"&client_id="+client_id
+                    +"&client_secret="+client_secret
+                    +"&authentication_url="+encodeURIComponent(authentication_url)
+                    +"&redirect_url="+encodeURIComponent(redirect_url)
+                    +"&access_token_url="+encodeURIComponent(access_token_url)
+                    +(scope.length !== 0 ? "&scope="+scope : "");
             $(this).attr("href", url);
           }
         });
