@@ -31,6 +31,7 @@ module.exports = function (RED) {
     credentials: {
       client_id: { type: "text" },
       client_secret: { type: "password" },
+      access_token_url: { type: "password" },
       access_token: { type: "password" },
       refresh_token: { type: "password" },
       expire_time: { type: "password" }
@@ -145,11 +146,11 @@ module.exports = function (RED) {
       }
     }, function (err, result, data) {
       if (err) {
-        return res.send("error getting access token: " + err);
+        return res.send("Error getting access token: " + err);
       }
 
       if (data.error) {
-        return res.send("error getting access token data: " + data.error);
+        return res.send("Authorization error: " + data.error);
       }
 
       credentials.access_token = data.access_token;
@@ -159,10 +160,11 @@ module.exports = function (RED) {
 
       delete credentials.csrf_token;
       delete credentials.redirect_url;
-      delete credentials.access_token_url;
 
       RED.nodes.addCredentials(node_id, credentials);
       saveNodeCredentials(node_id, credentials);
+
+      res.send("Authentication successful");
     });
   });
 
