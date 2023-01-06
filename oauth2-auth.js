@@ -5,7 +5,7 @@ module.exports = function (RED) {
   const fs = require('fs');
   const path = require('path');
   const request = require('request');
-   
+
   function OAuth2Auth(config) {
     RED.nodes.createNode(this, config);
 
@@ -14,16 +14,16 @@ module.exports = function (RED) {
     node.credentials = loadNodeCredentials(node.id, (err) => node.warn(err));
 
     node.on('input', function (msg) {
-      // if (!node.credentials.expire_time || node.credentials.expire_time < (new Date().getTime() / 1000)) {
-      //   refresh_token(function (err) {
-      //     if (err) {
-      //       node.error(err);
-      //     }
-      //   });
-      // }
+      refreshCredentials(node.id, node.credentials, (credentials, err) => 
+      {
+        if (err) {
+          node.error(err);
+        }
 
-      msg.bearerToken = 'Bearer ' + node.credentials.access_token;
-      node.send(msg);
+        node.credentials = credentials;
+        msg.bearerToken = 'Bearer ' + node.credentials.access_token;
+        node.send(msg);
+      });
     });
   }
 
@@ -56,7 +56,7 @@ module.exports = function (RED) {
     }
     catch (error) {
       if (error_callback) {
-        error_callback("Could not load node credentials: " + error);
+        error_callback(RED._("oauth2auth.error.load_node_credentials", { error: error }));
       }
 
       return {};
@@ -72,9 +72,49 @@ module.exports = function (RED) {
     }
     catch (error) {
       if (error_callback) {
-        error_callback("Could not save node credentials: " + error);
+        error_callback(RED._("save_node_credentials", { error: error }));
       }
     }
+  }
+
+  function refreshCredentials(node_id, credentials, callback) {
+    if (!credentials || !credentials.expire_time) {
+      credentials = loadNodeCredentials(node_id);
+    }
+
+    if (credentials && credentials.expire_time && credentials.expire_time >= (new Date().getTime() / 1000)) {
+      return callback(credentials, null);
+    }
+
+    request.post({
+      url: credentials.access_token_url,
+      json: true,
+      form: {
+        grant_type: 'refresh_token',
+        client_id: credentials.client_id,
+        client_secret: credentials.client_secret,
+        refresh_token: credentials.refresh_token
+      }
+    },
+      function (err, result, data) {
+        if (err) {
+          return callback(credentials, RED._("oauth2auth.error.get_access_token", { error: err }));
+        }
+
+        if (data.error) {
+          return callback(credentials, RED._("oauth2auth.error.something_broke", { error: data.error }));
+        }
+
+        credentials.access_token = data.access_token;
+        credentials.refresh_token = data.refresh_token;
+        credentials.expires_in = data.expires_in;
+        credentials.expire_time = data.expires_in + (new Date().getTime() / 1000);
+
+        RED.nodes.addCredentials(node_id, credentials);
+        saveNodeCredentials(node_id, credentials);
+
+        return callback(credentials, null);
+      });
   }
 
   RED.httpAdmin.get('/oauth2-auth/auth', function (req, res) {
@@ -100,7 +140,7 @@ module.exports = function (RED) {
       access_token_url: access_token_url,
       csrf_token: csrf_token
     };
- 
+
     var authentication_url_obj = new URL(authentication_url);
     authentication_url_obj.search = new URLSearchParams({
       client_id: credentials.client_id,
@@ -118,20 +158,20 @@ module.exports = function (RED) {
 
   RED.httpAdmin.get('/oauth2-auth/callback', function (req, res) {
     if (req.query.error) {
-      return res.send("authentication error", { error: req.query.error, description: req.query.error_description });
+      return res.send(RED._("oauth2auth.error.error", { error: req.query.error, description: req.query.error_description }));
     }
 
     var auth_code = req.query.code;
     var state = req.query.state.split(':');
     var node_id = state[0];
     var credentials = RED.nodes.getCredentials(node_id);
-    
+
     if (!credentials || !credentials.client_id || !credentials.client_secret) {
-      return res.send("credentials not present");
+      return res.send(RED._("oauth2auth.error.no_credentials"));
     }
 
     if (state[1] !== credentials.csrf_token) {
-      return res.status(401).send("csrf token mismatch");
+      return res.status(401).send(RED._("oauth2auth.error.csrf_token_mismatch"));
     }
 
     request.post({
@@ -144,31 +184,32 @@ module.exports = function (RED) {
         client_secret: credentials.client_secret,
         redirect_uri: credentials.redirect_url,
       }
-    }, function (err, result, data) {
-      if (err) {
-        return res.send("Error getting access token: " + err);
-      }
+    },
+      function (err, result, data) {
+        if (err) {
+          return res.send(RED._("oauth2auth.error.get_access_token", { error: err }));
+        }
 
-      if (data.error) {
-        return res.send("Authorization error: " + data.error);
-      }
+        if (data.error) {
+          return res.send(RED._("oauth2auth.error.something_broke", { error: data.error }));
+        }
 
-      credentials.access_token = data.access_token;
-      credentials.refresh_token = data.refresh_token;
-      credentials.expires_in = data.expires_in;
-      credentials.expire_time =  data.expires_in + (new Date().getTime() / 1000);
+        credentials.access_token = data.access_token;
+        credentials.refresh_token = data.refresh_token;
+        credentials.expires_in = data.expires_in;
+        credentials.expire_time = data.expires_in + (new Date().getTime() / 1000);
 
-      delete credentials.csrf_token;
-      delete credentials.redirect_url;
+        delete credentials.csrf_token;
+        delete credentials.redirect_url;
 
-      RED.nodes.addCredentials(node_id, credentials);
-      saveNodeCredentials(node_id, credentials);
+        RED.nodes.addCredentials(node_id, credentials);
+        saveNodeCredentials(node_id, credentials);
 
-      res.send("Authentication successful");
-    });
+        res.send(RED._("oauth2auth.message.authorisation_successful"));
+      });
   });
 
-  // function decryptCredentials(key,credentials) {
+  // function decryptCredentials(key, credentials) {
   //   var encryptionAlgorithm = "aes-256-ctr";
   //   var creds = credentials["$"];
   //   var initVector = Buffer.from(creds.substring(0, 32),'hex');
@@ -178,53 +219,14 @@ module.exports = function (RED) {
   //   return JSON.parse(decrypted);
   // }
 
-  // refresh_token = function () {
-  //   var credentials = this.credentials;
-  //   var node = this;
-
-  //   if (!credentials.refresh_token) {
-  //     node.error("No refresh token");
-
-  //     return;
-  //   }
-
-  //   request.post(
-  //     {
-  //       url: node.access_token_url,
-  //       json: true,
-  //       form: {
-  //         grant_type: 'refresh_token',
-  //         client_id: credentials.client_id,
-  //         client_secret: credentials.client_secret,
-  //         refresh_token: credentials.refresh_token,
-  //       },
-  //     },
-  //     function (err, result, data) {
-  //       if (err) {
-  //         node.error("Refresh token error", { err: err });
-
-  //         return;
-  //       }
-
-  //       if (data.error) {
-  //         node.error("Refresh token error", { message: data.error.message });
-
-  //         return;
-  //       }
-
-  //       credentials.access_token = data.access_token;
-
-  //       if (data.refresh_token) {
-  //         credentials.refresh_token = data.refresh_token;
-  //       }
-
-  //       credentials.expires_in = data.expires_in;
-  //       credentials.expire_time = data.expires_in + (new Date().getTime() / 1000);
-
-  //       RED.nodes.addCredentials(node.id, credentials);
-  //       saveNodeCredentials(node.id, credentials);
-  //     }
-  //   );
-  // };
+  // function encryptCredentials(key, credentials) {
+  //   var encryptionAlgorithm = "aes-256-ctr";
+  //   var creds = credentials["$"];
+  //   var initVector = Buffer.from(creds.substring(0, 32),'hex');
+  //   creds = creds.substring(32);
+  //   var decipher = crypto.createDecipheriv(encryptionAlgorithm, key, initVector);
+  //   var decrypted = decipher.update(creds, 'base64', 'utf8') + decipher.final('utf8');
+  //   return JSON.parse(decrypted);
+  // }
 }
 

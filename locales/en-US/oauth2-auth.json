@@ -14,7 +14,17 @@
       "authorize": "Authorize",
       "name": "Name"
     },
+    "error": {
+      "error": "ERROR: __error__: __description__",
+      "no_credentials": "ERROR: No credentials - should never happen.",
+      "load_node_credentials": "Cannot load node credentials: __error__",
+      "save_node_credentials": "Cannot save node credentials: __error__",
+      "csrf_token_mismatch": "CSRF token mismatch, possible cross-site request forgery attempt.",
+      "get_access_token": "Error getting access token: __error__",
+      "something_broke": "Something went wrong in the authorization process. Please try again. __error__"
+    },
     "message": {
+      "authorisation_successful": "<html><head></head><body>Authorisation successful - you can close this window and return to Node-RED</body></html>",
       "help_text": "<p>OAuth2 client for getting oauth2 credentials by the authorization flow to use in other nodes. Credentials are automatically refreshed on expiration.</p>"
     }
   }
