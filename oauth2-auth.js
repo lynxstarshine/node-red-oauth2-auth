@@ -14,9 +14,14 @@ module.exports = function (RED) {
     node.credentials = loadNodeCredentials(node.id, (err) => node.warn(err));
 
     node.on('input', function (msg) {
+      node.status({fill:"blue", shape:"dot", text:RED._("oauth2auth.status.refreshing")});
+
       refreshCredentials(node.id, node.credentials, (credentials, err) => 
       {
+        node.status({});
+
         if (err) {
+          node.status({fill:"red", shape:"dot", text:RED._("oauth2auth.status.failed")});
           node.error(err);
         }
 
