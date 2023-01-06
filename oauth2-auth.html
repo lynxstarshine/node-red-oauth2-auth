@@ -1,7 +1,7 @@
 <script type="text/javascript">
   RED.nodes.registerType('oauth2-auth',{
       category: 'network',
-      paletteLabel: 'OAuth2 Authorization',
+      paletteLabel: 'oauth2 auth',
       color: '#d7d7a0',
       defaults: {
           grant_type: {value: "authorization_code"},
@@ -17,7 +17,7 @@
       inputs:1,
       outputs:1,
       icon: "white-globe.svg",
-      label: function() { return this.name||"oauth2-auth"; },
+      label: function() { return this.name || this._("oauth2auth.label.label"); },
       labelStyle: function () { return this.name ? "node_label_italic" : ""; },
 
       oneditprepare: function()
@@ -84,61 +84,61 @@
 <script type="text/html" data-template-name="oauth2-auth">
   <!-- Grant Type -->
   <div class="form-row">
-    <label for="node-input-grant_type"><i class="fa fa-wrench"></i>Grant Type</label>
+    <label for="node-input-grant_type"><i class="fa fa-wrench"></i><span data-i18n="oauth2auth.label.grant_type"></span></label>
     <select type="text" id="node-input-grant_type" placeholder="Grant Type">
-      <option value="authorization_code">Authorization Code</option>
+      <option value="authorization_code" data-i18n="oauth2auth.label.opt_authorization_code"></option>
     </select>
   </div>
 
   <!-- Client Id -->
   <div class="form-row">
-    <label for="node-input-client_id"><i class="fa fa-user fa-fw"></i>Client Id</label>
-    <input type="text" id="node-input-client_id" placeholder="Client Id">
+    <label for="node-input-client_id"><i class="fa fa-user fa-fw"></i><span data-i18n="oauth2auth.label.client_id"></span></label>
+    <input type="text" id="node-input-client_id" data-i18n="[placeholder]oauth2auth.label.client_id">
   </div>
 
   <!-- Client Secret -->
   <div class="form-row">
-    <label for="node-input-client_secret"><i class="fa fa-lock fa-fw"></i>Client Secret</label>
-    <input type="password" id="node-input-client_secret" placeholder="Client Secret">
+    <label for="node-input-client_secret"><i class="fa fa-lock fa-fw"></i><span data-i18n="oauth2auth.label.client_secret"></span></label>
+    <input type="password" id="node-input-client_secret">
   </div>
 
   <!-- Scope -->
   <div class="form-row">
-    <label for="node-input-scope"><i class="fa fa-code fa-fw"></i>Scope</label>
-    <input type="text" id="node-input-scope" placeholder="Scope">
+    <label for="node-input-scope"><i class="fa fa-code fa-fw"></i><span data-i18n="oauth2auth.label.scope"></span></label>
+    <input type="text" id="node-input-scope" data-i18n="[placeholder]oauth2auth.label.client_id">
   </div>
 
   <!-- Authentication Url -->
   <div class="form-row">
-    <label for="node-input-authentication_url"><i class="fa fa-link fa-fw"></i>Authentication Url</label>
-    <input type="text" id="node-input-authentication_url" placeholder="Authentication Url">
+    <label for="node-input-authentication_url"><i class="fa fa-link fa-fw"></i><span data-i18n="oauth2auth.label.authentication_url"></span></label>
+    <input type="text" id="node-input-authentication_url" data-i18n="[placeholder]oauth2auth.label.authentication_url">
   </div>
       
   <!-- Redirect Url -->
   <div class="form-row">
-    <label for="node-input-redirect_url"><i class="fa fa-link fa-fw"></i>Redirect Url</label>
-    <input readonly type="text" id="node-input-redirect_url" placeholder="Redirect Url">
+    <label for="node-input-redirect_url"><i class="fa fa-link fa-fw"></i><span data-i18n="oauth2auth.label.redirect_url"></span></label>
+    <input readonly type="text" id="node-input-redirect_url" data-i18n="[placeholder]oauth2auth.label.redirect_url">
   </div>
 
   <!-- Access Token Url -->
   <div class="form-row">
-    <label for="node-input-access_token_url"><i class="fa fa-link fa-fw"></i>Access Token Url</label>
-    <input type="text" id="node-input-access_token_url" placeholder="Access Token Url">
+    <label for="node-input-access_token_url"><i class="fa fa-link fa-fw"></i><span data-i18n="oauth2auth.label.access_token_url"></span></label>
+    <input type="text" id="node-input-access_token_url" data-i18n="[placeholder]oauth2auth.label.access_token_url">
   </div>
 
   <!-- Authorize Button -->
   <div class="form-row">
     <label>&nbsp;</label>
-    <a class="ui-button ui-corner-all" id="node-button-authorize" href="#" target="_blank">Authorize</a>
+    <a class="ui-button ui-corner-all" id="node-button-authorize" href="#" target="_blank"><span data-i18n="oauth2auth.label.authorize"></span></a>
  </div>
 
   <!-- Name -->
   <div class="form-row">
-    <label for="node-input-name"><i class="fa fa-tag"></i>Name</label>
-    <input type="text" id="node-input-name" placeholder="Name">
+    <label for="node-input-name"><i class="fa fa-tag"></i><span data-i18n="oauth2auth.label.name"></span></label>
+    <input type="text" id="node-input-name" data-i18n="[placeholder]oauth2auth.label.name">
   </div>
 </script>
 
 <script type="text/html" data-help-name="oauth2-auth">
-  <p>OAuth2 client for getting oauth2 credentials by the authorization flow to use in other nodes. Credentials are automatically refreshed on expiration.</p>
+  <span data-i18n="oauth2auth.message.help_text">
 </script>

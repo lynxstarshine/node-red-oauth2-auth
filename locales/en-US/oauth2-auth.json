@@ -1,0 +1,21 @@
+{
+  "oauth2auth": {
+    "label": {
+      "label": "oauth2-auth",
+      "palette_label": "OAuth2 Authorization",
+      "grant_type": "Grant Type",
+      "opt_authorization_code": "Authorization Code",
+      "client_id": "Client Id",
+      "client_secret": "Client Secret",
+      "scope": "Scope",
+      "authentication_url": "Authentication Url",
+      "redirect_url": "Redirect Url",
+      "access_token_url": "Access Token Url",
+      "authorize": "Authorize",
+      "name": "Name"
+    },
+    "message": {
+      "help_text": "<p>OAuth2 client for getting oauth2 credentials by the authorization flow to use in other nodes. Credentials are automatically refreshed on expiration.</p>"
+    }
+  }
+}
