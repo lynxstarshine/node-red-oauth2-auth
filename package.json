@@ -5,9 +5,16 @@
   "author": "Ralf Uhlig <ralf@uhlig-online.de>",
   "contributors": [],
   "license": "Apache-2.0",
+  "keywords": [
+    "node-red",
+    "oauth2",
+    "security",
+    "authentication",
+    "authorization"
+  ],
   "node-red": {
     "nodes": {
-      "oauth2-authorization": "oauth2-auth.js"
+      "oauth2-auth": "oauth2-auth.js"
     }
   }
 }
