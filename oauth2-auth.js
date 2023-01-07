@@ -55,7 +55,7 @@ module.exports = function (RED) {
     }
     catch (err) {
       if (err.code !== 'ENOENT') {
-        node.warn(RED._("oauth2auth.error.load_node_credentials", { error: err }));
+        node.warn(RED._("oauth2auth.error.load_node_credentials_failed", { error: err }));
       }
     }
   }
@@ -117,7 +117,7 @@ module.exports = function (RED) {
     }
     catch (error) {
       if (error_callback) {
-        error_callback(RED._("oauth2auth.error.save_node_credentials", { error: error }));
+        error_callback(RED._("oauth2auth.error.save_node_credentials_failed", { error: error }));
       }
     }
   }
