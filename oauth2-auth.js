@@ -11,21 +11,19 @@ module.exports = function (RED) {
 
     var node = this;
 
-    node.credentials = loadNodeCredentials(node.id, (err) => node.warn(err));
-
+    node.loadNodeCredentials();
+    
     node.on('input', function (msg) {
-      node.status({fill:"blue", shape:"dot", text:RED._("oauth2auth.status.refreshing")});
+      node.status({ fill: "blue", shape: "dot", text: RED._("oauth2auth.status.refreshing") });
 
-      refreshCredentials(node.id, node.credentials, (credentials, err) => 
-      {
+      node.refreshNodeCredentials((failed) => {
         node.status({});
 
-        if (err) {
-          node.status({fill:"red", shape:"dot", text:RED._("oauth2auth.status.failed")});
+        if (failed) {
+          node.status({ fill: "red", shape: "dot", text: RED._("oauth2auth.status.failed") });
           node.error(err);
         }
 
-        node.credentials = credentials;
         msg.bearerToken = 'Bearer ' + node.credentials.access_token;
         node.send(msg);
       });
@@ -43,52 +41,38 @@ module.exports = function (RED) {
     }
   });
 
-  function loadNodeCredentials(node_id, error_callback) {
-    const filepath = path.join(RED.settings.userDir, 'node_' + node_id + '_cred.json')
+  OAuth2Auth.prototype.loadNodeCredentials = function () {
+    const node = this;
+    const filepath = path.join(RED.settings.userDir, 'node_' + node.id + '_cred.json');
     const encoding = 'utf8';
 
     try {
-      if (!fs.existsSync(filepath)) {
-        return {};
-      }
-
       const content = fs.readFileSync(filepath, encoding);
       const credentials = JSON.parse(content);
 
-      RED.nodes.addCredentials(node_id, credentials);
-
-      return credentials;
+      RED.nodes.addCredentials(node.id, credentials);
+      node.credentials = credentials;
     }
-    catch (error) {
-      if (error_callback) {
-        error_callback(RED._("oauth2auth.error.load_node_credentials", { error: error }));
-      }
-
-      return {};
-    }
-  }
-  function saveNodeCredentials(node_id, credentials, error_callback) {
-    const filepath = path.join(RED.settings.userDir, 'node_' + node_id + '_cred.json');
-    const content = JSON.stringify(credentials);
-    const encoding = 'utf8';
-
-    try {
-      fs.writeFileSync(filepath, content, encoding);
-    }
-    catch (error) {
-      if (error_callback) {
-        error_callback(RED._("save_node_credentials", { error: error }));
+    catch (err) {
+      if (err.code !== 'ENOENT') {
+        node.warn(RED._("oauth2auth.error.load_node_credentials", { error: err }));
       }
     }
   }
 
-  function refreshCredentials(node_id, credentials, callback) {
-    if (!credentials || !credentials.expire_time) {
-      credentials = loadNodeCredentials(node_id);
+  OAuth2Auth.prototype.saveNodeCredentials = function () {
+    saveNodeCredentials(node.id, node.credentials, (err) => node.error(err));
+  }
+
+  OAuth2Auth.prototype.refreshNodeCredentials = function (callback) {
+    const node = this;
+
+    if (!node.credentials || !node.credentials.expire_time) {
+      node.loadNodeCredentials();
     }
 
-    if (credentials && credentials.expire_time && credentials.expire_time >= (new Date().getTime() / 1000)) {
-      return callback(credentials, null);
+    if (node.credentials && node.credentials.expire_time && node.credentials.expire_time >= (new Date().getTime() / 1000)) {
+      return callback(null);
     }
 
     request.post({
@@ -100,26 +84,42 @@ module.exports = function (RED) {
         client_secret: credentials.client_secret,
         refresh_token: credentials.refresh_token
       }
-    },
-      function (err, result, data) {
-        if (err) {
-          return callback(credentials, RED._("oauth2auth.error.get_access_token", { error: err }));
-        }
+    }, function (err, result, data) {
+      if (err) {
+        node.error(RED._("oauth2auth.error.get_access_token", { error: err }));
+        return callback(1);
+      }
 
-        if (data.error) {
-          return callback(credentials, RED._("oauth2auth.error.something_broke", { error: data.error }));
-        }
+      if (data.error) {
+        node.error(RED._("oauth2auth.error.something_broke", { error: data.error }));
+        return callback(1);
+      }
 
-        credentials.access_token = data.access_token;
-        credentials.refresh_token = data.refresh_token;
-        credentials.expires_in = data.expires_in;
-        credentials.expire_time = data.expires_in + (new Date().getTime() / 1000);
+      node.credentials.access_token = data.access_token;
+      node.credentials.refresh_token = data.refresh_token;
+      node.credentials.expires_in = data.expires_in;
+      node.credentials.expire_time = data.expires_in + (new Date().getTime() / 1000);
 
-        RED.nodes.addCredentials(node_id, credentials);
-        saveNodeCredentials(node_id, credentials);
+      RED.nodes.addCredentials(node.id, node.credentials);
+      node.saveNodeCredentials();
 
-        return callback(credentials, null);
-      });
+      return callback(null);
+    });
+  }
+
+  function saveNodeCredentials(node_id, credentials, error_callback) {
+    const filepath = path.join(RED.settings.userDir, 'node_' + node_id + '_cred.json');
+    const content = JSON.stringify(credentials);
+    const encoding = 'utf8';
+
+    try {
+      fs.writeFileSync(filepath, content, encoding);
+    }
+    catch (error) {
+      if (error_callback) {
+        error_callback(RED._("oauth2auth.error.save_node_credentials", { error: error }));
+      }
+    }
   }
 
   RED.httpAdmin.get('/oauth2-auth/auth', function (req, res) {
@@ -146,6 +146,8 @@ module.exports = function (RED) {
       csrf_token: csrf_token
     };
 
+    RED.nodes.addCredentials(node_id, credentials);
+
     var authentication_url_obj = new URL(authentication_url);
     authentication_url_obj.search = new URLSearchParams({
       client_id: credentials.client_id,
@@ -157,8 +159,6 @@ module.exports = function (RED) {
 
     res.cookie('csrf', csrf_token);
     res.redirect(authentication_url_obj.href);
-
-    RED.nodes.addCredentials(node_id, credentials);
   });
 
   RED.httpAdmin.get('/oauth2-auth/callback', function (req, res) {
