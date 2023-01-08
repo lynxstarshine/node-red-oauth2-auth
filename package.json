@@ -1,6 +1,6 @@
 {
   "name": "node-red-contrib-oauth2-auth",
-  "version": "0.0.1",
+  "version": "0.3.0",
   "description": "node-red-contrib-oauth2-auth - OAuth2 client for getting oauth2 credentials by the authorization flow to use in other nodes. Credentials are automatically refreshed on expiration.",
   "author": "Ralf Uhlig <ralf@uhlig-online.de>",
   "contributors": [],
