@@ -2,17 +2,13 @@ module.exports = function (RED) {
   "use strict";
 
   const crypto = require("crypto");
-  const fs = require('fs');
-  const path = require('path');
   const request = require('request');
 
   function OAuth2Auth(config) {
     RED.nodes.createNode(this, config);
 
     var node = this;
-
-    node.loadNodeCredentials();
-    
+   
     node.on('input', function (msg) {
       node.status({ fill: "blue", shape: "dot", text: RED._("oauth2auth.status.refreshing") });
 
@@ -41,34 +37,11 @@ module.exports = function (RED) {
     }
   });
 
-  OAuth2Auth.prototype.loadNodeCredentials = function () {
-    const node = this;
-    const filepath = path.join(RED.settings.userDir, 'node_' + node.id + '_cred.json');
-    const encoding = 'utf8';
-
-    try {
-      const content = fs.readFileSync(filepath, encoding);
-      const credentials = JSON.parse(content);
-
-      RED.nodes.addCredentials(node.id, credentials);
-      node.credentials = credentials;
-    }
-    catch (err) {
-      if (err.code !== 'ENOENT') {
-        node.warn(RED._("oauth2auth.error.load_node_credentials_failed", { error: err }));
-      }
-    }
-  }
-
-  OAuth2Auth.prototype.saveNodeCredentials = function () {
-    saveNodeCredentials(node.id, node.credentials, (err) => node.error(err));
-  }
-
   OAuth2Auth.prototype.refreshNodeCredentials = function (callback) {
     const node = this;
 
     if (!node.credentials || !node.credentials.expire_time) {
-      node.loadNodeCredentials();
+      node.credentials = RED.nodes.getCredentials(node.id);
     }
 
     if (node.credentials && node.credentials.expire_time && node.credentials.expire_time >= (new Date().getTime() / 1000)) {
@@ -101,25 +74,9 @@ module.exports = function (RED) {
       node.credentials.expire_time = data.expires_in + (new Date().getTime() / 1000);
 
       RED.nodes.addCredentials(node.id, node.credentials);
-      node.saveNodeCredentials();
 
       return callback(null);
     });
-  }
-
-  function saveNodeCredentials(node_id, credentials, error_callback) {
-    const filepath = path.join(RED.settings.userDir, 'node_' + node_id + '_cred.json');
-    const content = JSON.stringify(credentials);
-    const encoding = 'utf8';
-
-    try {
-      fs.writeFileSync(filepath, content, encoding);
-    }
-    catch (error) {
-      if (error_callback) {
-        error_callback(RED._("oauth2auth.error.save_node_credentials_failed", { error: error }));
-      }
-    }
   }
 
   RED.httpAdmin.get('/oauth2-auth/auth', function (req, res) {
@@ -208,30 +165,9 @@ module.exports = function (RED) {
         delete credentials.redirect_url;
 
         RED.nodes.addCredentials(node_id, credentials);
-        saveNodeCredentials(node_id, credentials);
 
         res.send(RED._("oauth2auth.message.authorisation_successful"));
       });
   });
-
-  // function decryptCredentials(key, credentials) {
-  //   var encryptionAlgorithm = "aes-256-ctr";
-  //   var creds = credentials["$"];
-  //   var initVector = Buffer.from(creds.substring(0, 32),'hex');
-  //   creds = creds.substring(32);
-  //   var decipher = crypto.createDecipheriv(encryptionAlgorithm, key, initVector);
-  //   var decrypted = decipher.update(creds, 'base64', 'utf8') + decipher.final('utf8');
-  //   return JSON.parse(decrypted);
-  // }
-
-  // function encryptCredentials(key, credentials) {
-  //   var encryptionAlgorithm = "aes-256-ctr";
-  //   var creds = credentials["$"];
-  //   var initVector = Buffer.from(creds.substring(0, 32),'hex');
-  //   creds = creds.substring(32);
-  //   var decipher = crypto.createDecipheriv(encryptionAlgorithm, key, initVector);
-  //   var decrypted = decipher.update(creds, 'base64', 'utf8') + decipher.final('utf8');
-  //   return JSON.parse(decrypted);
-  // }
 }
 
