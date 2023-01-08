@@ -1,142 +1,207 @@
 <script type="text/javascript">
-  RED.nodes.registerType('oauth2-auth',{
-      category: 'network',
-      paletteLabel: 'oauth2 auth',
-      color: '#d7d7a0',
-      defaults: {
-          grant_type: {value: "authorization_code"},
-          client_id: {value: "", required: true},
-          client_secret: {value: "", required: true},
-          scope: {value: ""},
-          state: {value: ""},
-          authentication_url: {value: "", required: true},
-          redirect_url: {value: ""},
-          access_token_url: {value: "", required: true},
-          name: {value: ""}
-      },
-      inputs:1,
-      outputs:1,
-      icon: "white-globe.svg",
-      label: function() { return this.name || this._("oauth2auth.label.label"); },
-      labelStyle: function () { return this.name ? "node_label_italic" : ""; },
+  RED.nodes.registerType('oauth2-auth-config', {
+    category: 'config',
+    defaults: {
+      grant_type: { value: "authorization_code" },
+      client_name: { value: "", required: true },
+      client_id: { value: "", required: true },
+      client_secret: { value: "", required: true },
+      authentication_url: { value: "", required: true },
+      redirect_url: { value: "" },
+      access_token_url: { value: "", required: true },
+    },
+    label: function () { return this.client_name; },
 
-      oneditprepare: function()
-      {
-        var id = this.id;
-
-        function updateButtonAuthorize() {
-          var client_id = $("#node-input-client_id").val();
-          var client_secret = $("#node-input-client_secret").val();
-          var authentication_url = $("#node-input-authentication_url").val();
-          var redirect_url = $("#node-input-redirect_url").val();
-          var access_token_url = $("#node-input-access_token_url").val();
-
-          $("#node-button-authorize").toggleClass("ui-state-disabled", (client_id.length === 0 || client_secret.length === 0 || authentication_url === 0 || redirect_url === 0 || access_token_url === 0));
-        }
-
-        updateButtonAuthorize();
-
-        $("#node-input-redirect_url").val(document.location.origin + '/oauth2-auth/callback');
-        $("#node-input-client_id").on('change keydown paste input', updateButtonAuthorize);
-        $("#node-input-client_secret").on('change keydown paste input', updateButtonAuthorize);
-        $("#node-input-authentication_url").on('change keydown paste input', updateButtonAuthorize);
-        $("#node-input-redirect_url").on('change keydown paste input', updateButtonAuthorize);
-        $("#node-input-access_token_url").on('change keydown paste input', updateButtonAuthorize);
-
-        $("#node-button-authorize").mousedown(function() {
-          var client_id = $("#node-input-client_id").val();
-          var client_secret = $("#node-input-client_secret").val();
-          var authentication_url = $("#node-input-authentication_url").val();
-          var redirect_url = $("#node-input-redirect_url").val();
-          var access_token_url = $("#node-input-access_token_url").val();
-          var scope = $("#node-input-scope").val();
-          var grant_type = $("#node-input-grant_type").val();
-
-          if (grant_type == "authorization_code") {
-            var url = "oauth2-auth/auth?id="+id
-                    +"&client_id="+client_id
-                    +"&client_secret="+client_secret
-                    +"&authentication_url="+encodeURIComponent(authentication_url)
-                    +"&redirect_url="+encodeURIComponent(redirect_url)
-                    +"&access_token_url="+encodeURIComponent(access_token_url)
-                    +(scope.length !== 0 ? "&scope="+scope : "");
-            $(this).attr("href", url);
-          }
-        });
-
-        $("#node-button-authorize").click(function(e) {
-          var client_id = $("#node-input-client_id").val();
-          var client_secret = $("#node-input-client_secret").val();
-          var authentication_url = $("#node-input-authentication_url").val();
-          var redirect_url = $("#node-input-redirect_url").val();
-          var access_token_url = $("#node-input-access_token_url").val();
-
-          console.log(client_id.length);
-
-          if (client_id.length === 0 || client_secret.length === 0 || authentication_url === 0 || redirect_url === 0 || access_token_url === 0) {
-            e.preventDefault();
-          }
-        });
-      }
+    oneditprepare: function () {
+      $("#node-config-input-redirect_url").val(document.location.origin + '/oauth2-auth/callback');
+    }
   });
 </script>
 
-<script type="text/html" data-template-name="oauth2-auth">
-  <!-- Grant Type -->
+<script type="text/html" data-template-name="oauth2-auth-config">
   <div class="form-row">
-    <label for="node-input-grant_type"><i class="fa fa-wrench"></i><span data-i18n="oauth2auth.label.grant_type"></span></label>
-    <select type="text" id="node-input-grant_type" placeholder="Grant Type">
+    <label for="node-config-input-client_name">
+      <i class="fa fa-tag fa-fw"></i>
+      <span data-i18n="oauth2auth.label.client_name"></span>
+    </label>
+    <input type="text" id="node-config-input-client_name" data-i18n="[placeholder]oauth2auth.label.client_name">
+  </div>
+
+  <div class="form-row">
+    <label for="node-config-input-grant_type">
+      <i class="fa fa-wrench"></i>
+      <span data-i18n="oauth2auth.label.grant_type"></span>
+    </label>
+    <select type="text" id="node-config-input-grant_type" placeholder="Grant Type">
       <option value="authorization_code" data-i18n="oauth2auth.label.opt_authorization_code"></option>
     </select>
   </div>
 
-  <!-- Client Id -->
   <div class="form-row">
-    <label for="node-input-client_id"><i class="fa fa-user fa-fw"></i><span data-i18n="oauth2auth.label.client_id"></span></label>
-    <input type="text" id="node-input-client_id" data-i18n="[placeholder]oauth2auth.label.client_id">
+    <label for="node-config-input-client_id">
+      <i class="fa fa-user fa-fw"></i>
+      <span data-i18n="oauth2auth.label.client_id"></span>
+    </label>
+    <input type="text" id="node-config-input-client_id" data-i18n="[placeholder]oauth2auth.label.client_id">
   </div>
 
-  <!-- Client Secret -->
   <div class="form-row">
-    <label for="node-input-client_secret"><i class="fa fa-lock fa-fw"></i><span data-i18n="oauth2auth.label.client_secret"></span></label>
-    <input type="password" id="node-input-client_secret">
+    <label for="node-config-input-client_secret">
+      <i class="fa fa-lock fa-fw"></i>
+      <span data-i18n="oauth2auth.label.client_secret"></span>
+    </label>
+    <input type="password" id="node-config-input-client_secret" data-i18n="[placeholder]oauth2auth.label.client_secret">
   </div>
 
-  <!-- Scope -->
   <div class="form-row">
-    <label for="node-input-scope"><i class="fa fa-code fa-fw"></i><span data-i18n="oauth2auth.label.scope"></span></label>
+    <label for="node-config-input-authentication_url">
+      <i class="fa fa-link fa-fw"></i>
+      <span data-i18n="oauth2auth.label.authentication_url"></span>
+    </label>
+    <input type="text" id="node-config-input-authentication_url" data-i18n="[placeholder]oauth2auth.label.authentication_url">
+  </div>
+
+  <div class="form-row">
+    <label for="node-config-input-redirect_url">
+      <i class="fa fa-link fa-fw"></i>
+      <span data-i18n="oauth2auth.label.redirect_url"></span>
+    </label>
+    <input readonly type="text" id="node-config-input-redirect_url" data-i18n="[placeholder]oauth2auth.label.redirect_url">
+  </div>
+
+  <div class="form-row">
+    <label for="node-config-input-access_token_url">
+      <i class="fa fa-link fa-fw"></i>
+      <span data-i18n="oauth2auth.label.access_token_url"></span>
+    </label>
+    <input type="text" id="node-config-input-access_token_url" data-i18n="[placeholder]oauth2auth.label.access_token_url">
+  </div>
+</script>
+
+<script type="text/html" data-help-name="oauth2-auth-config">
+  <span data-i18n="oauth2auth.message.config_help_text">
+</script>
+
+
+
+<script type="text/javascript">
+  RED.nodes.registerType('oauth2-auth', {
+    category: 'network',
+    paletteLabel: 'oauth2 auth',
+    color: '#d7d7a0',
+    defaults: {
+      client_config: { value: "", type: "oauth2-auth-config", required: true },
+      scope: { value: "" },
+      name: { value: "" },
+      auth_timestamp: { value: "" }
+    },
+    inputs: 1,
+    outputs: 1,
+    icon: "cog.svg",
+    label: function () { return this.name || this._("oauth2auth.label.label"); },
+    labelStyle: function () { return this.name ? "node_label_italic" : ""; },
+
+    oneditprepare: function () {
+      var id = this.id;
+
+      function updateButtonAuthorize() {
+        var client_config = RED.nodes.node($("#node-input-client_config").val());
+        var client_id = client_config ? client_config.client_id : "";
+        var client_secret = client_config ? client_config.client_secret : "";
+        var authentication_url = client_config ? client_config.authentication_url : "";
+        var redirect_url = client_config ? client_config.redirect_url : "";
+        var access_token_url = client_config ? client_config.access_token_url : "";
+
+        $("#node-input-client_id").val(client_id);
+        $("#node-input-authentication_url").val(authentication_url);
+        $("#node-input-redirect_url").val(redirect_url);
+        $("#node-input-access_token_url").val(access_token_url);
+
+        $("#node-button-authorize").toggleClass("ui-state-disabled", (client_id.length === 0 || client_secret.length === 0 || authentication_url === 0 || redirect_url === 0 || access_token_url === 0));
+      }
+
+      updateButtonAuthorize();
+
+      $("#node-input-client_config").on('change', updateButtonAuthorize);
+
+      $("#node-button-authorize").mousedown(function () {
+        var client_config = RED.nodes.node($("#node-input-client_config").val());
+        var grant_type = client_config ? client_config.grant_type : "";
+        var client_id = client_config ? client_config.client_id : "";
+        var client_secret = client_config ? client_config.client_secret : "";
+        var authentication_url = client_config ? client_config.authentication_url : "";
+        var redirect_url = client_config ? client_config.redirect_url : "";
+        var access_token_url = client_config ? client_config.access_token_url : "";
+        var scope = $("#node-input-scope").val();
+
+        if (grant_type == "authorization_code") {
+          var url = "oauth2-auth/auth?id=" + id
+            + "&client_id=" + client_id
+            + "&client_secret=" + client_secret
+            + "&authentication_url=" + encodeURIComponent(authentication_url)
+            + "&redirect_url=" + encodeURIComponent(redirect_url)
+            + "&access_token_url=" + encodeURIComponent(access_token_url)
+            + (scope.length !== 0 ? "&scope=" + scope : "");
+          $(this).attr("href", url);
+        }
+      });
+
+      $("#node-button-authorize").click(function (e) {
+        var client_config = RED.nodes.node($("#node-input-client_config").val());
+        var client_id = client_config ? client_config.client_id : "";
+        var client_secret = client_config ? client_config.client_secret : "";
+        var authentication_url = client_config ? client_config.authentication_url : "";
+        var redirect_url = client_config ? client_config.redirect_url : "";
+        var access_token_url = client_config ? client_config.access_token_url : "";
+
+        if (client_id.length === 0 || client_secret.length === 0 || authentication_url === 0 || redirect_url === 0 || access_token_url === 0) {
+          e.preventDefault();
+        } else {
+          $("#node-input-auth_timestamp").val(Date.now().toString());
+        }
+      });
+    }
+  });
+</script>
+
+<script type="text/html" data-template-name="oauth2-auth">
+  <div class="form-row">
+    <label for="node-input-client_config">
+      <i class="fa fa-wrench"></i>
+      <span data-i18n="oauth2auth.label.client_config"></span>
+    </label>
+    <input type="text" id="node-input-client_config" data-i18n="[placeholder]oauth2auth.label.client_config">
+  </div>
+
+  <div class="form-row">
+    <label for="node-input-scope">
+      <i class="fa fa-code fa-fw"></i>
+      <span data-i18n="oauth2auth.label.scope"></span>
+    </label>
     <input type="text" id="node-input-scope" data-i18n="[placeholder]oauth2auth.label.scope">
   </div>
 
-  <!-- Authentication Url -->
-  <div class="form-row">
-    <label for="node-input-authentication_url"><i class="fa fa-link fa-fw"></i><span data-i18n="oauth2auth.label.authentication_url"></span></label>
-    <input type="text" id="node-input-authentication_url" data-i18n="[placeholder]oauth2auth.label.authentication_url">
-  </div>
-      
-  <!-- Redirect Url -->
-  <div class="form-row">
-    <label for="node-input-redirect_url"><i class="fa fa-link fa-fw"></i><span data-i18n="oauth2auth.label.redirect_url"></span></label>
-    <input readonly type="text" id="node-input-redirect_url" data-i18n="[placeholder]oauth2auth.label.redirect_url">
-  </div>
-
-  <!-- Access Token Url -->
-  <div class="form-row">
-    <label for="node-input-access_token_url"><i class="fa fa-link fa-fw"></i><span data-i18n="oauth2auth.label.access_token_url"></span></label>
-    <input type="text" id="node-input-access_token_url" data-i18n="[placeholder]oauth2auth.label.access_token_url">
-  </div>
-
-  <!-- Authorize Button -->
   <div class="form-row">
     <label>&nbsp;</label>
-    <a class="ui-button ui-corner-all" id="node-button-authorize" href="#" target="_blank"><span data-i18n="oauth2auth.label.authorize"></span></a>
- </div>
+    <a class="ui-button ui-corner-all" id="node-button-authorize" href="#" target="_blank">
+      <span data-i18n="oauth2auth.label.authorize"></span>
+    </a>
+  </div>
 
-  <!-- Name -->
   <div class="form-row">
-    <label for="node-input-name"><i class="fa fa-tag"></i><span data-i18n="oauth2auth.label.name"></span></label>
+    <label for="node-input-name">
+      <i class="fa fa-tag"></i>
+      <span data-i18n="oauth2auth.label.name"></span>
+    </label>
     <input type="text" id="node-input-name" data-i18n="[placeholder]oauth2auth.label.name">
   </div>
+
+  <div class="form-row">
+    <label>&nbsp;</label>
+    <input type="hidden" id="node-input-auth_timestamp">
+  </div>
+
+
 </script>
 
 <script type="text/html" data-help-name="oauth2-auth">

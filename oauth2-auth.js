@@ -4,6 +4,22 @@ module.exports = function (RED) {
   const crypto = require("crypto");
   const request = require('request');
 
+  function OAuth2AuthConfig(config) {
+    RED.nodes.createNode(this, config);
+  }
+
+  RED.nodes.registerType("oauth2-auth-config", OAuth2AuthConfig, {
+    credentials: {
+      client_name: { type: "text" },
+      client_id: { type: "text" },
+      client_secret: { type: "password" },
+      access_token_url: { type: "password" },
+      access_token: { type: "password" },
+      refresh_token: { type: "password" },
+      expire_time: { type: "password" }
+    }
+  });
+
   function OAuth2Auth(config) {
     RED.nodes.createNode(this, config);
 
@@ -33,16 +49,15 @@ module.exports = function (RED) {
       access_token_url: { type: "password" },
       access_token: { type: "password" },
       refresh_token: { type: "password" },
-      expire_time: { type: "password" }
+      expire_time: { type: "password" },
+      timestamp: { type: "number" },
     }
   });
 
   OAuth2Auth.prototype.refreshNodeCredentials = function (callback) {
     const node = this;
 
-    if (!node.credentials || !node.credentials.expire_time) {
-      node.credentials = RED.nodes.getCredentials(node.id);
-    }
+    node.credentials = RED.nodes.getCredentials(node.id);
 
     if (node.credentials && node.credentials.expire_time && node.credentials.expire_time >= (new Date().getTime() / 1000)) {
       return callback(null);
@@ -135,7 +150,7 @@ module.exports = function (RED) {
     if (state[1] !== credentials.csrf_token) {
       return res.status(401).send(RED._("oauth2auth.error.csrf_token_mismatch"));
     }
-
+   
     request.post({
       url: credentials.access_token_url,
       json: true,

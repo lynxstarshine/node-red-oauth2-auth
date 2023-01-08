@@ -5,6 +5,8 @@
       "palette_label": "OAuth2 Authorization",
       "grant_type": "Grant Type",
       "opt_authorization_code": "Authorization Code",
+      "client_config": "Client Config",
+      "client_name": "Client Name",
       "client_id": "Client Id",
       "client_secret": "Client Secret",
       "scope": "Scope",
@@ -29,7 +31,8 @@
     },
     "message": {
       "authorisation_successful": "<html><head></head><body>Authorisation successful - you can close this window and return to Node-RED</body></html>",
-      "help_text": "<p>OAuth2 client for getting oauth2 credentials by the authorization flow to use in other nodes. Credentials are automatically refreshed on expiration.</p>"
+      "help_text": "<p>OAuth2 client for getting oauth2 credentials by the authorization flow to use in other nodes. Credentials are automatically refreshed on expiration.</p>",
+      "config_help_text": "<p>Configuration for oauth2 client.</p>"
     }
   }
 }
