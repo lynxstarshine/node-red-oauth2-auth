@@ -8,17 +8,7 @@ module.exports = function (RED) {
     RED.nodes.createNode(this, config);
   }
 
-  RED.nodes.registerType("oauth2-auth-config", OAuth2AuthConfig, {
-    credentials: {
-      client_name: { type: "text" },
-      client_id: { type: "text" },
-      client_secret: { type: "password" },
-      access_token_url: { type: "password" },
-      access_token: { type: "password" },
-      refresh_token: { type: "password" },
-      expire_time: { type: "password" }
-    }
-  });
+  RED.nodes.registerType("oauth2-auth-config", OAuth2AuthConfig);
 
   function OAuth2Auth(config) {
     RED.nodes.createNode(this, config);
@@ -50,7 +40,7 @@ module.exports = function (RED) {
       access_token: { type: "password" },
       refresh_token: { type: "password" },
       expire_time: { type: "password" },
-      timestamp: { type: "number" },
+      auth_time: { type: "text" },
     }
   });
 
@@ -175,6 +165,7 @@ module.exports = function (RED) {
         credentials.refresh_token = data.refresh_token;
         credentials.expires_in = data.expires_in;
         credentials.expire_time = data.expires_in + (new Date().getTime() / 1000);
+        credentials.auth_time = Date.now();
 
         delete credentials.csrf_token;
         delete credentials.redirect_url;

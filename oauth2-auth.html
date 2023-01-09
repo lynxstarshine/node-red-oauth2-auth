@@ -93,7 +93,7 @@
       client_config: { value: "", type: "oauth2-auth-config", required: true },
       scope: { value: "" },
       name: { value: "" },
-      auth_timestamp: { value: "" }
+      auth_time: { value: "" }
     },
     inputs: 1,
     outputs: 1,
@@ -103,6 +103,18 @@
 
     oneditprepare: function () {
       var id = this.id;
+
+      function checkAuthorization() {
+        $.getJSON("credentials/oauth2-auth/"+id, function (data) {
+          if (data.auth_time) {
+            $("#node-input-auth_time").val(data.auth_time.toString());
+            $("#authorized-message").show();
+            delete window.oauth2authCheckAuthTimer;
+          } else {
+            window.oauth2authCheckAuthTimer = window.setTimeout(checkAuthorization, 2000);
+          }
+        });
+      }
 
       function updateButtonAuthorize() {
         var client_config = RED.nodes.node($("#node-input-client_config").val());
@@ -122,6 +134,7 @@
 
       updateButtonAuthorize();
 
+      $("#authorized-message").hide();
       $("#node-input-client_config").on('change', updateButtonAuthorize);
 
       $("#node-button-authorize").mousedown(function () {
@@ -143,6 +156,10 @@
             + "&access_token_url=" + encodeURIComponent(access_token_url)
             + (scope.length !== 0 ? "&scope=" + scope : "");
           $(this).attr("href", url);
+
+          $("#authorized-message").hide();
+
+          window.oauth2authCheckAuthTimer = window.setTimeout(checkAuthorization, 2000);
         }
       });
 
@@ -156,10 +173,22 @@
 
         if (client_id.length === 0 || client_secret.length === 0 || authentication_url === 0 || redirect_url === 0 || access_token_url === 0) {
           e.preventDefault();
-        } else {
-          $("#node-input-auth_timestamp").val(Date.now().toString());
-        }
+        } 
       });
+    },
+
+    oneditsave: function() {
+      if (window.oauth2authCheckAuthTimer) {
+        window.clearTimeout(window.oauth2authCheckAuthTimer);
+        delete window.oauth2authCheckAuthTimer;
+      }
+    },
+
+    oneditcancel: function() {
+      if (window.oauth2authCheckAuthTimer) {
+        window.clearTimeout(window.oauth2authCheckAuthTimer);
+        delete window.oauth2authCheckAuthTimer;
+      }
     }
   });
 </script>
@@ -186,6 +215,9 @@
     <a class="ui-button ui-corner-all" id="node-button-authorize" href="#" target="_blank">
       <span data-i18n="oauth2auth.label.authorize"></span>
     </a>
+    <label style="margin-left: 10px;" id="authorized-message">
+      <span data-i18n="oauth2auth.label.authorized"></span> 
+    </label>
   </div>
 
   <div class="form-row">
@@ -198,7 +230,7 @@
 
   <div class="form-row">
     <label>&nbsp;</label>
-    <input type="hidden" id="node-input-auth_timestamp">
+    <input type="hidden" id="node-input-auth_time">
   </div>
 
 

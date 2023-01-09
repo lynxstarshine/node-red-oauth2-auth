@@ -14,6 +14,7 @@
       "redirect_url": "Redirect Url",
       "access_token_url": "Access Token Url",
       "authorize": "Authorize",
+      "authorized": "Authorized",
       "name": "Name"
     },
     "error": {
