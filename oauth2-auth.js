@@ -94,6 +94,7 @@ module.exports = function (RED) {
     var client_id = req.query.client_id;
     var client_secret = req.query.client_secret;
     var scope = req.query.scope;
+    var force_login = req.query.force_login;
     var authentication_url = req.query.authentication_url;
     var redirect_url = req.query.redirect_url;
     var access_token_url = req.query.access_token_url;
@@ -116,7 +117,8 @@ module.exports = function (RED) {
       redirect_uri: redirect_url,
       response_type: 'code',
       state: state,
-      scope: scope
+      scope: scope,
+      prompt: force_login.toLowerCase() === "true" ? "login" : "consent"
     });
 
     res.cookie('csrf', csrf_token);

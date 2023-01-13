@@ -92,6 +92,7 @@
     defaults: {
       client_config: { value: "", type: "oauth2-auth-config", required: true },
       scope: { value: "" },
+      force_login: { value: false },
       name: { value: "" },
       auth_time: { value: "" }
     },
@@ -146,6 +147,7 @@
         var redirect_url = client_config ? client_config.redirect_url : "";
         var access_token_url = client_config ? client_config.access_token_url : "";
         var scope = $("#node-input-scope").val();
+        var force_login = $("#node-input-force_login").is(':checked');
 
         if (grant_type == "authorization_code") {
           var url = "oauth2-auth/auth?id=" + id
@@ -154,7 +156,8 @@
             + "&authentication_url=" + encodeURIComponent(authentication_url)
             + "&redirect_url=" + encodeURIComponent(redirect_url)
             + "&access_token_url=" + encodeURIComponent(access_token_url)
-            + (scope.length !== 0 ? "&scope=" + scope : "");
+            + "&force_login=" + force_login
+            + (scope.length !== 0 ? "&scope=" + encodeURIComponent(scope) : "")
           $(this).attr("href", url);
 
           $("#authorized-message").hide();
@@ -204,10 +207,18 @@
 
   <div class="form-row">
     <label for="node-input-scope">
-      <i class="fa fa-code fa-fw"></i>
+      <i class="fa fa fa-wrench fa-fw"></i>
       <span data-i18n="oauth2auth.label.scope"></span>
     </label>
     <input type="text" id="node-input-scope" data-i18n="[placeholder]oauth2auth.label.scope">
+  </div>
+
+  <div class="form-row">
+    <label for="node-input-force_login">
+      <i class="fa fa-wrench fa-fw"></i>
+      <span data-i18n="oauth2auth.label.force_login"></span>
+    </label>
+    <input type="checkbox" id="node-input-force_login" style="width: auto;margin: 4px 0 4px 0;">
   </div>
 
   <div class="form-row">

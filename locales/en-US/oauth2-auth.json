@@ -10,6 +10,7 @@
       "client_id": "Client Id",
       "client_secret": "Client Secret",
       "scope": "Scope",
+      "force_login": "Force Login",
       "authentication_url": "Authentication Url",
       "redirect_url": "Redirect Url",
       "access_token_url": "Access Token Url",
