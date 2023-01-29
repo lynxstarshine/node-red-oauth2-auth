@@ -54,13 +54,13 @@ module.exports = function (RED) {
     }
 
     request.post({
-      url: credentials.access_token_url,
+      url: node.credentials.access_token_url,
       json: true,
       form: {
         grant_type: 'refresh_token',
-        client_id: credentials.client_id,
-        client_secret: credentials.client_secret,
-        refresh_token: credentials.refresh_token
+        client_id: node.credentials.client_id,
+        client_secret: node.credentials.client_secret,
+        refresh_token: node.credentials.refresh_token
       }
     }, function (err, result, data) {
       if (err) {
