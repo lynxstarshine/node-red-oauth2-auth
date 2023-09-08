@@ -23,7 +23,6 @@ module.exports = function (RED) {
 
         if (failed) {
           node.status({ fill: "red", shape: "dot", text: RED._("oauth2auth.status.failed") });
-          node.error(err);
         }
 
         msg.bearerToken = 'Bearer ' + node.credentials.access_token;
