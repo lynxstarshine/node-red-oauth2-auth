@@ -18,10 +18,10 @@ module.exports = function (RED) {
     node.on('input', function (msg) {
       node.status({ fill: "blue", shape: "dot", text: RED._("oauth2auth.status.refreshing") });
 
-      node.refreshNodeCredentials((failed) => {
+      node.refreshNodeCredentials((err) => {
         node.status({});
 
-        if (failed) {
+        if (err) {
           node.status({ fill: "red", shape: "dot", text: RED._("oauth2auth.status.failed") });
         }
 
@@ -64,12 +64,12 @@ module.exports = function (RED) {
     }, function (err, result, data) {
       if (err) {
         node.error(RED._("oauth2auth.error.get_access_token", { error: err }));
-        return callback(1);
+        return callback(err);
       }
 
       if (data.error) {
         node.error(RED._("oauth2auth.error.something_broke", { error: data.error }));
-        return callback(1);
+        return callback(data.error);
       }
 
       node.credentials.access_token = data.access_token;
