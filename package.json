@@ -16,6 +16,7 @@
     "authorization"
   ],
   "node-red": {
+    "version": ">=2.0.0",
     "nodes": {
       "oauth2-auth": "oauth2-auth.js"
     }
