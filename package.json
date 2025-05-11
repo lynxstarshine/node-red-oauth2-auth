@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "description": "node-red-oauth2-auth - OAuth2 client for getting oauth2 credentials by the authorization flow to use in other nodes. Credentials are automatically refreshed on expiration.",
   "dependencies": {
-    "request": "^2.88.2"
+    "axios": "^1.9.0"
   },
   "author": "LynxStarShine <lynxstarshine@rosamont.ch>",
   "contributors": [

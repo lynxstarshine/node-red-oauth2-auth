@@ -2,7 +2,7 @@ module.exports = function (RED) {
   "use strict";
 
   const crypto = require("crypto");
-  const request = require('request');
+  const axios = require('axios');
 
   function generateRandomString(length) {
     var text = "";
@@ -34,7 +34,7 @@ module.exports = function (RED) {
 
     var node = this;
 
-    node.on('input', function (msg) {
+    node.on('input', function (msg, send, done) {
       node.status({ fill: "blue", shape: "dot", text: RED._("oauth2auth.status.refreshing") });
 
       node.refreshNodeCredentials((err) => {
@@ -42,10 +42,19 @@ module.exports = function (RED) {
 
         if (err) {
           node.status({ fill: "red", shape: "dot", text: RED._("oauth2auth.status.failed") });
+          if (done) {
+            done(err);
+          } else {
+            node.error(err, msg);
+          }
+          return
         }
 
         msg.bearerToken = 'Bearer ' + node.credentials.access_token;
-        node.send(msg);
+        send(msg);
+        if (done) {
+          done();
+        }
       });
     });
   }
@@ -71,35 +80,35 @@ module.exports = function (RED) {
       return callback(null);
     }
 
-    request.post({
-      url: node.credentials.access_token_url,
-      json: true,
-      form: {
-        grant_type: 'refresh_token',
-        client_id: node.credentials.client_id,
-        client_secret: node.credentials.client_secret,
-        refresh_token: node.credentials.refresh_token
-      }
-    }, function (err, result, data) {
-      if (err) {
-        node.error(RED._("oauth2auth.error.get_access_token", { error: err }));
-        return callback(err);
-      }
+    axios.post(node.credentials.access_token_url, {
+      grant_type: 'refresh_token',
+      client_id: node.credentials.client_id,
+      client_secret: node.credentials.client_secret,
+      refresh_token: node.credentials.refresh_token
+    }, {
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
 
-      if (data.error) {
+    }).then((response) => {
+
+      if (response.data.error) {
         node.error(RED._("oauth2auth.error.something_broke", { error: data.error }));
         return callback(data.error);
       }
 
-      node.credentials.access_token = data.access_token;
-      node.credentials.refresh_token = data.refresh_token;
-      node.credentials.expires_in = data.expires_in;
-      node.credentials.expire_time = data.expires_in + (new Date().getTime() / 1000);
+      node.credentials.access_token = reponse.data.access_token;
+      node.credentials.refresh_token = reponse.data.refresh_token;
+      node.credentials.expires_in = reponse.data.expires_in;
+      node.credentials.expire_time = reponse.data.expires_in + (new Date().getTime() / 1000);
 
       RED.nodes.addCredentials(node.id, node.credentials);
 
       return callback(null);
-    });
+    }, (error) => {
+      node.error(RED._("oauth2auth.error.get_access_token", { error: error }));
+      return callback(error);
+    })
   }
 
   RED.httpAdmin.get('/oauth2-auth/auth', function (req, res) {
@@ -143,7 +152,7 @@ module.exports = function (RED) {
         scope: scope,
         prompt: force_login.toLowerCase() === "true" ? "login" : "consent"
       });
-  
+
       res.cookie('csrf', csrf_token);
       res.redirect(authentication_url_obj.href);
     })
@@ -167,41 +176,40 @@ module.exports = function (RED) {
       return res.status(401).send(RED._("oauth2auth.error.csrf_token_mismatch"));
     }
 
-    request.post({
-      url: credentials.access_token_url,
-      json: true,
-      form: {
-        grant_type: 'authorization_code',
-        code: auth_code,
-        client_id: credentials.client_id,
-        client_secret: credentials.client_secret,
-        code_verifier: credentials.code_verifier,
-        redirect_uri: credentials.redirect_url,
+    axios.post(credentials.access_token_url, {
+      grant_type: 'authorization_code',
+      code: auth_code,
+      client_id: credentials.client_id,
+      client_secret: credentials.client_secret,
+      code_verifier: credentials.code_verifier,
+      redirect_uri: credentials.redirect_url,
+    }, {
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+
+    }).then((response) => {
+      const data = response.data
+      if (data.error) {
+        return res.send(RED._("oauth2auth.error.something_broke", { error: data.error }));
       }
-    },
-      function (err, result, data) {
-        if (err) {
-          return res.send(RED._("oauth2auth.error.get_access_token", { error: err }));
-        }
 
-        if (data.error) {
-          return res.send(RED._("oauth2auth.error.something_broke", { error: data.error }));
-        }
+      credentials.access_token = data.access_token;
+      credentials.refresh_token = data.refresh_token;
+      credentials.expires_in = data.expires_in;
+      credentials.expire_time = data.expires_in + (new Date().getTime() / 1000);
+      credentials.auth_time = Date.now();
 
-        credentials.access_token = data.access_token;
-        credentials.refresh_token = data.refresh_token;
-        credentials.expires_in = data.expires_in;
-        credentials.expire_time = data.expires_in + (new Date().getTime() / 1000);
-        credentials.auth_time = Date.now();
+      delete credentials.csrf_token;
+      delete credentials.redirect_url;
+      delete credentials.code_verifier;
 
-        delete credentials.csrf_token;
-        delete credentials.redirect_url;
-        delete credentials.code_verifier;
+      RED.nodes.addCredentials(node_id, credentials);
 
-        RED.nodes.addCredentials(node_id, credentials);
-
-        res.send(RED._("oauth2auth.message.authorisation_successful"));
-      });
+      res.send(RED._("oauth2auth.message.authorisation_successful"));
+    }, (error) => {
+      return res.send(RED._("oauth2auth.error.get_access_token", { error: error }));
+    });
   });
 }
 
