@@ -4,6 +4,25 @@ module.exports = function (RED) {
   const crypto = require("crypto");
   const request = require('request');
 
+  function generateRandomString(length) {
+    var text = "";
+    var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+
+    for (var i = 0; i < length; i++) {
+      text += possible.charAt(Math.floor(Math.random() * possible.length));
+    }
+
+    return text;
+  }
+
+  async function generateCodeChallenge(codeVerifier) {
+    var digest = await crypto.subtle.digest("SHA-256",
+      new TextEncoder().encode(codeVerifier));
+
+    return btoa(String.fromCharCode(...new Uint8Array(digest)))
+      .replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_')
+  }
+
   function OAuth2AuthConfig(config) {
     RED.nodes.createNode(this, config);
   }
@@ -14,7 +33,7 @@ module.exports = function (RED) {
     RED.nodes.createNode(this, config);
 
     var node = this;
-   
+
     node.on('input', function (msg) {
       node.status({ fill: "blue", shape: "dot", text: RED._("oauth2auth.status.refreshing") });
 
@@ -39,7 +58,7 @@ module.exports = function (RED) {
       access_token: { type: "password" },
       refresh_token: { type: "password" },
       expire_time: { type: "password" },
-      auth_time: { type: "text" },
+      auth_time: { type: "text" }
     }
   });
 
@@ -98,6 +117,7 @@ module.exports = function (RED) {
     var redirect_url = req.query.redirect_url;
     var access_token_url = req.query.access_token_url;
     var csrf_token = crypto.randomBytes(18).toString('base64').replace(/\//g, '-').replace(/\+/g, '_');
+    var code_verifier = generateRandomString(64)
     var state = node_id + ":" + csrf_token;
 
     var credentials = {
@@ -105,23 +125,28 @@ module.exports = function (RED) {
       client_secret: client_secret,
       redirect_url: redirect_url,
       access_token_url: access_token_url,
-      csrf_token: csrf_token
+      csrf_token: csrf_token,
+      code_verifier: code_verifier
     };
 
     RED.nodes.addCredentials(node_id, credentials);
 
-    var authentication_url_obj = new URL(authentication_url);
-    authentication_url_obj.search = new URLSearchParams({
-      client_id: credentials.client_id,
-      redirect_uri: redirect_url,
-      response_type: 'code',
-      state: state,
-      scope: scope,
-      prompt: force_login.toLowerCase() === "true" ? "login" : "consent"
-    });
-
-    res.cookie('csrf', csrf_token);
-    res.redirect(authentication_url_obj.href);
+    generateCodeChallenge(code_verifier).then((codeChallenge) => {
+      var authentication_url_obj = new URL(authentication_url);
+      authentication_url_obj.search = new URLSearchParams({
+        client_id: credentials.client_id,
+        redirect_uri: redirect_url,
+        response_type: 'code',
+        code_challenge_method: 'S256',
+        code_challenge: codeChallenge,
+        state: state,
+        scope: scope,
+        prompt: force_login.toLowerCase() === "true" ? "login" : "consent"
+      });
+  
+      res.cookie('csrf', csrf_token);
+      res.redirect(authentication_url_obj.href);
+    })
   });
 
   RED.httpAdmin.get('/oauth2-auth/callback', function (req, res) {
@@ -141,7 +166,7 @@ module.exports = function (RED) {
     if (state[1] !== credentials.csrf_token) {
       return res.status(401).send(RED._("oauth2auth.error.csrf_token_mismatch"));
     }
-   
+
     request.post({
       url: credentials.access_token_url,
       json: true,
@@ -150,6 +175,7 @@ module.exports = function (RED) {
         code: auth_code,
         client_id: credentials.client_id,
         client_secret: credentials.client_secret,
+        code_verifier: credentials.code_verifier,
         redirect_uri: credentials.redirect_url,
       }
     },
@@ -170,6 +196,7 @@ module.exports = function (RED) {
 
         delete credentials.csrf_token;
         delete credentials.redirect_url;
+        delete credentials.code_verifier;
 
         RED.nodes.addCredentials(node_id, credentials);
 
