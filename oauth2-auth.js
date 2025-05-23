@@ -97,10 +97,10 @@ module.exports = function (RED) {
         return callback(data.error);
       }
 
-      node.credentials.access_token = reponse.data.access_token;
-      node.credentials.refresh_token = reponse.data.refresh_token;
-      node.credentials.expires_in = reponse.data.expires_in;
-      node.credentials.expire_time = reponse.data.expires_in + (new Date().getTime() / 1000);
+      node.credentials.access_token = response.data.access_token;
+      node.credentials.refresh_token = response.data.refresh_token;
+      node.credentials.expires_in = response.data.expires_in;
+      node.credentials.expire_time = response.data.expires_in + (new Date().getTime() / 1000);
 
       RED.nodes.addCredentials(node.id, node.credentials);
 
